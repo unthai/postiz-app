@@ -46,6 +46,40 @@ export class XProvider extends SocialAbstract implements SocialProvider {
   editor = 'normal' as const;
   dto = XDto;
 
+  /**
+   * Resolve X API app credentials from per-channel additionalSettings,
+   * falling back to global env vars. This allows each X channel to use
+   * its own developer app (and thus its own rate limits / quota).
+   */
+  private getAppCredentials(integration?: Integration | null): {
+    appKey: string;
+    appSecret: string;
+  } {
+    if (integration?.additionalSettings) {
+      try {
+        const settings = JSON.parse(integration.additionalSettings);
+        const appKeyEntry = Array.isArray(settings)
+          ? settings.find((s: { title: string }) => s.title === 'X API Key')
+          : null;
+        const appSecretEntry = Array.isArray(settings)
+          ? settings.find((s: { title: string }) => s.title === 'X API Secret')
+          : null;
+        if (appKeyEntry?.value && appSecretEntry?.value) {
+          return {
+            appKey: String(appKeyEntry.value),
+            appSecret: String(appSecretEntry.value),
+          };
+        }
+      } catch {
+        // malformed JSON — fall through to env vars
+      }
+    }
+    return {
+      appKey: process.env.X_API_KEY!,
+      appSecret: process.env.X_API_SECRET!,
+    };
+  }
+
   maxLength(additionalSettings?: any) {
     // Accepts either the parsed additionalSettings array (from validation) or a
     // plain boolean (legacy callers). "Verified" => premium => higher limit.
@@ -136,7 +170,7 @@ export class XProvider extends SocialAbstract implements SocialProvider {
     }
     if (
       body.includes(
-        'This user is not allowed to post a video longer than 2 minutes'
+        'This user is not allowed to post a video longer than 2 minutes',
       )
     ) {
       return {
@@ -169,14 +203,15 @@ export class XProvider extends SocialAbstract implements SocialProvider {
   async autoRepostPost(
     integration: Integration,
     id: string,
-    fields: { likesAmount: string }
+    fields: { likesAmount: string },
   ) {
     // @ts-ignore
     // eslint-disable-next-line prefer-rest-params
     const [accessTokenSplit, accessSecretSplit] = integration.token.split(':');
+    const { appKey, appSecret } = this.getAppCredentials(integration);
     const client = new TwitterApi({
-      appKey: process.env.X_API_KEY!,
-      appSecret: process.env.X_API_SECRET!,
+      appKey,
+      appSecret,
       accessToken: accessTokenSplit,
       accessSecret: accessSecretSplit,
     });
@@ -204,12 +239,13 @@ export class XProvider extends SocialAbstract implements SocialProvider {
     integration: Integration,
     originalIntegration: Integration,
     postId: string,
-    information: any
+    information: any,
   ) {
     const [accessTokenSplit, accessSecretSplit] = integration.token.split(':');
+    const { appKey, appSecret } = this.getAppCredentials(integration);
     const client = new TwitterApi({
-      appKey: process.env.X_API_KEY!,
-      appSecret: process.env.X_API_SECRET!,
+      appKey,
+      appSecret,
       accessToken: accessTokenSplit,
       accessSecret: accessSecretSplit,
     });
@@ -253,14 +289,15 @@ export class XProvider extends SocialAbstract implements SocialProvider {
   async autoPlugPost(
     integration: Integration,
     id: string,
-    fields: { likesAmount: string; post: string }
+    fields: { likesAmount: string; post: string },
   ) {
     // @ts-ignore
     // eslint-disable-next-line prefer-rest-params
     const [accessTokenSplit, accessSecretSplit] = integration.token.split(':');
+    const { appKey, appSecret } = this.getAppCredentials(integration);
     const client = new TwitterApi({
-      appKey: process.env.X_API_KEY!,
-      appSecret: process.env.X_API_SECRET!,
+      appKey,
+      appSecret,
       accessToken: accessTokenSplit,
       accessSecret: accessSecretSplit,
     });
@@ -307,7 +344,7 @@ export class XProvider extends SocialAbstract implements SocialProvider {
           authAccessType: 'write',
           linkMode: 'authenticate',
           forceLogin: false,
-        }
+        },
       );
     return {
       url,
@@ -327,9 +364,8 @@ export class XProvider extends SocialAbstract implements SocialProvider {
       accessSecret: oauth_token_secret,
     });
 
-    const { accessToken, client, accessSecret } = await startingClient.login(
-      code
-    );
+    const { accessToken, client, accessSecret } =
+      await startingClient.login(code);
 
     const {
       data: { username, verified, profile_image_url, name, id },
@@ -358,15 +394,30 @@ export class XProvider extends SocialAbstract implements SocialProvider {
           type: 'checkbox' as const,
           value: verified,
         },
+        {
+          title: 'X API Key',
+          description:
+            'Optional: Use a custom X developer app for this channel (separate rate limits)',
+          type: 'text' as const,
+          value: '',
+        },
+        {
+          title: 'X API Secret',
+          description:
+            'Optional: The API secret for your custom X developer app',
+          type: 'text' as const,
+          value: '',
+        },
       ],
     };
   }
 
-  private async getClient(accessToken: string) {
+  private async getClient(accessToken: string, integration?: Integration | null) {
     const [accessTokenSplit, accessSecretSplit] = accessToken.split(':');
+    const { appKey, appSecret } = this.getAppCredentials(integration);
     return new TwitterApi({
-      appKey: process.env.X_API_KEY!,
-      appSecret: process.env.X_API_SECRET!,
+      appKey,
+      appSecret,
       accessToken: accessTokenSplit,
       accessSecret: accessSecretSplit,
     });
@@ -499,7 +550,7 @@ export class XProvider extends SocialAbstract implements SocialProvider {
 
   private async uploadMedia(
     client: TwitterApi,
-    postDetails: PostDetails<any>[]
+    postDetails: PostDetails<any>[],
   ) {
     // Media is uploaded sequentially on purpose: uploading everything with
     // Promise.all holds every file in memory at the same time.
@@ -557,7 +608,7 @@ export class XProvider extends SocialAbstract implements SocialProvider {
     integration: Integration
   ): Promise<PostResponse[]> {
     const [accessTokenSplit, accessSecretSplit] = accessToken.split(':');
-    const client = await this.getClient(accessToken);
+    const client = await this.getClient(accessToken, integration); (feat: per-channel X API credentials via additionalSettings)
 
     const [firstPost] = postDetails;
 
@@ -627,10 +678,10 @@ export class XProvider extends SocialAbstract implements SocialProvider {
       made_with_ai?: boolean;
       paid_partnership?: boolean;
     }>[],
-    integration: Integration
+    integration: Integration,
   ): Promise<PostResponse[]> {
     const [accessTokenSplit, accessSecretSplit] = accessToken.split(':');
-    const client = await this.getClient(accessToken);
+    const client = await this.getClient(accessToken, integration);
     const [commentPost] = postDetails;
 
     // upload media for the comment
@@ -685,7 +736,7 @@ export class XProvider extends SocialAbstract implements SocialProvider {
     id: string,
     until: string,
     since: string,
-    token = ''
+    token = '',
   ): Promise<TweetV2[]> => {
     const tweets = await client.v2.userTimeline(id, {
       'tweet.fields': ['id'],
@@ -708,7 +759,7 @@ export class XProvider extends SocialAbstract implements SocialProvider {
             id,
             until,
             since,
-            tweets.meta.next_token
+            tweets.meta.next_token,
           )
         : []),
     ];
@@ -717,7 +768,7 @@ export class XProvider extends SocialAbstract implements SocialProvider {
   async analytics(
     id: string,
     accessToken: string,
-    date: number
+    date: number,
   ): Promise<AnalyticsData[]> {
     if (process.env.DISABLE_X_ANALYTICS) {
       return [];
@@ -740,9 +791,9 @@ export class XProvider extends SocialAbstract implements SocialProvider {
           client,
           id,
           until.format('YYYY-MM-DDTHH:mm:ssZ'),
-          since.format('YYYY-MM-DDTHH:mm:ssZ')
+          since.format('YYYY-MM-DDTHH:mm:ssZ'),
         ),
-        (p) => p.id
+        (p) => p.id,
       );
 
       if (tweets.length === 0) {
@@ -753,7 +804,7 @@ export class XProvider extends SocialAbstract implements SocialProvider {
         tweets.map((p) => p.id),
         {
           'tweet.fields': ['public_metrics'],
-        }
+        },
       );
 
       const metrics = data.data.reduce(
@@ -781,7 +832,7 @@ export class XProvider extends SocialAbstract implements SocialProvider {
           quote_count: 0,
           reply_count: 0,
           retweet_count: 0,
-        }
+        },
       );
 
       return Object.entries(metrics).map(([key, value]) => ({
@@ -808,7 +859,7 @@ export class XProvider extends SocialAbstract implements SocialProvider {
     integrationId: string,
     accessToken: string,
     postId: string,
-    date: number
+    date: number,
   ): Promise<AnalyticsData[]> {
     if (process.env.DISABLE_X_ANALYTICS) {
       return [];
