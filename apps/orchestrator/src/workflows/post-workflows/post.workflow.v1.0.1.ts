@@ -105,6 +105,7 @@ export async function postWorkflowV101({
       false,
       'info'
     );
+    await changeState(post.id, 'ERROR', new Error('Integration needs reconnect'), postsListBefore);
     return;
   }
 
@@ -118,6 +119,7 @@ export async function postWorkflowV101({
       false,
       'info'
     );
+    await changeState(post.id, 'ERROR', new Error('Integration is disabled'), postsListBefore);
     return;
   }
 
