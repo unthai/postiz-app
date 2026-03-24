@@ -335,20 +335,23 @@ export class XProvider extends SocialAbstract implements SocialProvider {
           description:
             'Optional: Use a custom X developer app for this channel (separate rate limits)',
           type: 'text' as const,
-          value: '',
+          value: process.env.X_API_KEY || '',
         },
         {
           title: 'X API Secret',
           description:
             'Optional: The API secret for your custom X developer app',
           type: 'text' as const,
-          value: '',
+          value: process.env.X_API_SECRET || '',
         },
       ],
     };
   }
 
-  private async getClient(accessToken: string, integration?: Integration | null) {
+  private async getClient(
+    accessToken: string,
+    integration?: Integration | null,
+  ) {
     const [accessTokenSplit, accessSecretSplit] = accessToken.split(':');
     const { appKey, appSecret } = this.getAppCredentials(integration);
     return new TwitterApi({
