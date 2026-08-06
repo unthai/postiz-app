@@ -1,0 +1,28 @@
+# Suppress upstream-owned findings from gitroomhq/postiz-app fork
+# These secrets belong to the Postiz maintainers, not us — we cannot rotate them.
+# Generated 2026-04-16 by security audit.
+
+150b873b03916b9fdf950160c00dab4cf4612364:apps/frontend/src/components/launches/polonto.tsx:generic-api-key:14
+313830806627da9d4df541cc97945512f5175cec:sonar-project.properties:sonar-api-token:12
+39f617a54aa8a6b2e690824e62481d41f0275863:sonar-project.properties:sonar-api-token:12
+44d64361b090fe410e0253333bfd65b22cc178c5:i18n.lock:discord-client-secret:141
+44d64361b090fe410e0253333bfd65b22cc178c5:i18n.lock:generic-api-key:226
+44d64361b090fe410e0253333bfd65b22cc178c5:i18n.lock:generic-api-key:276
+44d64361b090fe410e0253333bfd65b22cc178c5:i18n.lock:generic-api-key:277
+44d64361b090fe410e0253333bfd65b22cc178c5:i18n.lock:generic-api-key:278
+44d64361b090fe410e0253333bfd65b22cc178c5:i18n.lock:generic-api-key:280
+44d64361b090fe410e0253333bfd65b22cc178c5:i18n.lock:generic-api-key:281
+44d64361b090fe410e0253333bfd65b22cc178c5:i18n.lock:generic-api-key:349
+44d64361b090fe410e0253333bfd65b22cc178c5:i18n.lock:generic-api-key:363
+44d64361b090fe410e0253333bfd65b22cc178c5:i18n.lock:generic-api-key:365
+44d64361b090fe410e0253333bfd65b22cc178c5:i18n.lock:generic-api-key:410
+44d64361b090fe410e0253333bfd65b22cc178c5:i18n.lock:generic-api-key:42
+4552f88950739e776786c38be335f5445c3e7f84:.env.example:cloudflare-api-key:17
+6224634dcb125d08651d8b5217c3881b90a9323d:.env.example:cloudflare-api-key:26
+73ba9acf8c537e7fffb55ad76888597e6c36f81a:apps/frontend/src/components/agents/agent.tsx:generic-api-key:236
+75648cd90bd8748e0a091b6bf52942d91c159c96:apps/docs/installation/development.mdx:cloudflare-api-key:99
+b8c72002150bbcfb844e9b275b78c2bd9bf94851:README.md:generic-api-key:24
+b8c72002150bbcfb844e9b275b78c2bd9bf94851:README.md:generic-api-key:27
+b8c72002150bbcfb844e9b275b78c2bd9bf94851:README.md:generic-api-key:30
+b8c72002150bbcfb844e9b275b78c2bd9bf94851:README.md:generic-api-key:33
+cd085e27cab868c82634d800b3876d41ef7e6ab9:i18n.lock:generic-api-key:580
